@@ -1,5 +1,9 @@
 package com.apu.hrms.servlet;
 
+import com.apu.hrms.entity.User;
+import com.apu.hrms.facade.UserFacade;
+import com.apu.hrms.util.PasswordUtil;
+import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -12,6 +16,9 @@ public class LoginServlet extends HttpServlet {
 
     private static final String LOGIN_PAGE =
             "/WEB-INF/views/auth/login.jsp";
+
+    @EJB
+    private UserFacade userFacade;
 
     /**
      * Handles opening the login page.
@@ -83,9 +90,29 @@ public class LoginServlet extends HttpServlet {
                     email
             );
 
+            request.getRequestDispatcher(LOGIN_PAGE)
+                    .forward(request, response);
+
+            return;
+        }
+
+        User user =
+                userFacade.findByEmail(email);
+
+        String submittedPasswordHash =
+                PasswordUtil.hashPassword(password);
+
+        if (user == null ||
+                !submittedPasswordHash.equals(user.getPasswordHash())) {
+
             request.setAttribute(
-                    "enteredPassword",
-                    password
+                    "emailError",
+                    "Invalid email or password."
+            );
+
+            request.setAttribute(
+                    "enteredEmail",
+                    email
             );
 
             request.getRequestDispatcher(LOGIN_PAGE)
@@ -94,16 +121,10 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        /*
-         * Temporary result.
-         *
-         * Database authentication has not been
-         * implemented yet. This confirms that
-         * the form and server-side validation work.
-         */
         request.setAttribute(
                 "infoMessage",
-                "Input accepted. Database authentication will be connected next."
+                "Login successful as " + user.getRole() +
+                        ". Session and dashboard will be added next."
         );
 
         request.setAttribute(
