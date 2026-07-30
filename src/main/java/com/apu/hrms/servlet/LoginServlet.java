@@ -9,6 +9,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 @WebServlet("/login")
@@ -122,18 +123,40 @@ public class LoginServlet extends HttpServlet {
         }
 
         request.setAttribute(
-                "infoMessage",
-                "Login successful as " + user.getRole() +
-                        ". Session and dashboard will be added next."
-        );
-
-        request.setAttribute(
                 "enteredEmail",
                 email
         );
 
-        request.getRequestDispatcher(LOGIN_PAGE)
-                .forward(request, response);
+        HttpSession session =
+                request.getSession();
+
+        session.setAttribute(
+                "loggedInUserId",
+                user.getId()
+        );
+
+        session.setAttribute(
+                "loggedInUserName",
+                user.getName()
+        );
+
+        session.setAttribute(
+                "loggedInUserRole",
+                user.getRole().name()
+        );
+
+        response.sendRedirect(
+                request.getContextPath() + getDashboardPath(user)
+        );
+    }
+
+    private String getDashboardPath(User user) {
+        return switch (user.getRole()) {
+            case MANAGER -> "/manager/dashboard";
+            case COUNTER_STAFF -> "/counter/dashboard";
+            case HOUSEKEEPER -> "/housekeeper/dashboard";
+            case CUSTOMER -> "/login";
+        };
     }
 
     /**

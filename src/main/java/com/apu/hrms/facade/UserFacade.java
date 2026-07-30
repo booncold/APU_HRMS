@@ -42,4 +42,16 @@ public class UserFacade {
 
         return count > 0;
     }
+
+    public boolean existsByIc(String ic) {
+        Long count = entityManager
+                .createQuery(
+                        "SELECT COUNT(u) FROM User u WHERE u.ic = :ic",
+                        Long.class
+                )
+                .setParameter("ic", ic)
+                .getSingleResult();
+
+        return count > 0;
+    }
 }
