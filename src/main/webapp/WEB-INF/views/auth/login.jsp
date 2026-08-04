@@ -408,6 +408,26 @@
             outline-offset: 2px;
         }
 
+        .forgot-password-row {
+            display: flex;
+            justify-content: flex-end;
+
+            margin-top: 10px;
+        }
+
+        .forgot-password-link {
+            color: var(--accent);
+            text-decoration: none;
+
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .forgot-password-link:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
+
         .authorised-text {
             margin-top: 22px;
 
@@ -565,6 +585,13 @@
                         <c:out value="${passwordError}"/>
                     </div>
                 </c:if>
+
+                <div class="forgot-password-row">
+                    <a class="forgot-password-link"
+                       href="${pageContext.request.contextPath}/forgot-password">
+                        Forgot Password?
+                    </a>
+                </div>
             </div>
 
             <button class="login-button"

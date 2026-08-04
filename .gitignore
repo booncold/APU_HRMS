@@ -39,3 +39,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Project local (not for VCS) ###
+Pic_Temp_Refer/
+sql/
+05-2 Assignment-Question CT027-3-3_EPDA_3F2605.doc
+Assignment - assumptions - 20260522.docx

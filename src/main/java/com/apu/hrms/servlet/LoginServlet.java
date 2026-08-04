@@ -33,6 +33,26 @@ public class LoginServlet extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
+        HttpSession existingSession =
+                request.getSession(false);
+
+        if (existingSession != null
+                && existingSession.getAttribute("loggedInUserRole") != null) {
+
+            String role =
+                    String.valueOf(
+                            existingSession.getAttribute("loggedInUserRole")
+                    );
+
+            response.sendRedirect(
+                    request.getContextPath() + dashboardPathForRole(role)
+            );
+            return;
+        }
+
+        if (request.getParameter("success") != null) {
+            request.setAttribute("infoMessage", request.getParameter("success"));
+        }
         request.getRequestDispatcher(LOGIN_PAGE)
                 .forward(request, response);
     }
@@ -151,11 +171,16 @@ public class LoginServlet extends HttpServlet {
     }
 
     private String getDashboardPath(User user) {
-        return switch (user.getRole()) {
-            case MANAGER -> "/manager/dashboard";
-            case COUNTER_STAFF -> "/counter/dashboard";
-            case HOUSEKEEPER -> "/housekeeper/dashboard";
-            case CUSTOMER -> "/login";
+        return dashboardPathForRole(user.getRole().name());
+    }
+
+    private String dashboardPathForRole(String role) {
+        return switch (role) {
+            case "MANAGER" -> "/manager/dashboard";
+            case "COUNTER_STAFF" -> "/counter/dashboard";
+            case "HOUSEKEEPER" -> "/housekeeper/dashboard";
+            case "CUSTOMER" -> "/customer/dashboard";
+            default -> "/login";
         };
     }
 

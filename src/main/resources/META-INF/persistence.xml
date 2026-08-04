@@ -5,7 +5,18 @@
              version="3.2">
     <persistence-unit name="default" transaction-type="JTA">
         <jta-data-source>java:/jdbc/APUHRMSDS</jta-data-source>
+
         <class>com.apu.hrms.entity.User</class>
+        <class>com.apu.hrms.entity.Room</class>
+        <class>com.apu.hrms.entity.BookingOrder</class>
+        <class>com.apu.hrms.entity.BookingRoom</class>
+        <class>com.apu.hrms.entity.Payment</class>
+        <class>com.apu.hrms.entity.CleaningTask</class>
+        <class>com.apu.hrms.entity.Feedback</class>
+        <class>com.apu.hrms.entity.Comment</class>
+        <class>com.apu.hrms.entity.CommentMention</class>
+        <class>com.apu.hrms.entity.PasswordResetToken</class>
+
         <properties>
             <property name="hibernate.hbm2ddl.auto"
                       value="update"/>

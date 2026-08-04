@@ -7,8 +7,12 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -33,21 +37,57 @@ public class User {
     @Column(nullable = false)
     private String gender;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private String phone;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 32)
     private String ic;
 
     @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 500)
     private String address;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private UserRole role;
+
+    @Column(name = "seed_admin", nullable = false)
+    private boolean seedAdmin = false;
+
+    @Column(nullable = false)
+    private boolean deleted = false;
+
+    /**
+     * Defaults help schema updates on databases that already contain rows.
+     * Application code still sets these in @PrePersist / @PreUpdate.
+     */
+    @Column(
+            name = "created_at",
+            nullable = false,
+            columnDefinition = "datetime(6) default current_timestamp(6)"
+    )
+    private LocalDateTime createdAt;
+
+    @Column(
+            name = "updated_at",
+            nullable = false,
+            columnDefinition = "datetime(6) default current_timestamp(6)"
+    )
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Long getId() {
         return id;
@@ -119,5 +159,37 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public boolean isSeedAdmin() {
+        return seedAdmin;
+    }
+
+    public void setSeedAdmin(boolean seedAdmin) {
+        this.seedAdmin = seedAdmin;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
