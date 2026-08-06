@@ -8,7 +8,7 @@
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
 <p class="page-summary">
-    View assigned cleaning tasks, mark them complete, and write room feedback.
+    View assigned cleaning tasks, mark them complete, and submit room feedback from My Tasks.
 </p>
 
 <section class="action-list" aria-label="Housekeeper actions">
@@ -16,14 +16,7 @@
         <h2>
             <a href="${ctx}/housekeeper/tasks">My Tasks</a>
         </h2>
-        <p>See open assignments and complete cleaning to free the room.</p>
-    </article>
-
-    <article class="action-card">
-        <h2>
-            <a href="${ctx}/housekeeper/feedback">Write Feedback</a>
-        </h2>
-        <p>Submit feedback linked to a specific room for managers to review.</p>
+        <p>See open assignments, complete cleaning, and submit feedback for ongoing or completed tasks.</p>
     </article>
 </section>
 

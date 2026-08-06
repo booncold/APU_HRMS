@@ -90,9 +90,6 @@
 
             <a class="sidebar-link ${active == 'tasks' ? 'is-active' : ''}"
                href="${ctx}/housekeeper/tasks">My Tasks</a>
-
-            <a class="sidebar-link ${active == 'feedback' ? 'is-active' : ''}"
-               href="${ctx}/housekeeper/feedback">Write Feedback</a>
         </c:if>
 
         <c:if test="${role == 'CUSTOMER'}">
