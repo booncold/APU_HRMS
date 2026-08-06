@@ -65,6 +65,7 @@
             <div class="form-group">
                 <label for="password">Password</label>
                 <input id="password" name="password" type="password"
+                       value="${isEdit ? '' : fn:escapeXml(enteredPassword)}"
                        ${isEdit ? '' : 'required'}>
                 <c:if test="${not empty passwordHint}">
                     <div class="field-hint"><c:out value="${passwordHint}"/></div>

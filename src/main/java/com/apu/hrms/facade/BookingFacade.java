@@ -231,6 +231,30 @@ public class BookingFacade {
     }
 
     /**
+     * Active room timelines for the room inventory page.
+     */
+    public List<BookingRoom> findActiveRoomBookings() {
+        List<BookingRoom> lines = entityManager
+                .createQuery(
+                        "SELECT br FROM BookingRoom br "
+                                + "JOIN FETCH br.order "
+                                + "JOIN FETCH br.room "
+                                + "LEFT JOIN FETCH br.order.customer "
+                                + "WHERE (br.status = :reserved "
+                                + "OR br.status = :checkedIn) "
+                                + "AND br.order.status <> :cancelled "
+                                + "ORDER BY br.roomNumberSnapshot, br.order.checkInDate",
+                        BookingRoom.class
+                )
+                .setParameter("reserved", BookingRoomStatus.RESERVED)
+                .setParameter("checkedIn", BookingRoomStatus.CHECKED_IN)
+                .setParameter("cancelled", OrderStatus.CANCELLED)
+                .getResultList();
+        initializeBookingRooms(lines);
+        return lines;
+    }
+
+    /**
      * Reserved rooms whose arrival date has arrived.
      * Missed arrivals remain in the queue so the counter can process a late
      * check-in instead of leaving the booking permanently stranded.

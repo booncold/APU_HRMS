@@ -455,17 +455,18 @@ a:hover {
  * Room tables (Manager Rooms & Pricing): same multi-table alignment rules.
  */
 :root {
-    --room-col-room: 16%;
-    --room-col-floor: 12%;
-    --room-col-status: 18%;
-    --room-col-price: 18%;
-    --room-col-actions: 36%;
+    --room-col-room: 10%;
+    --room-col-floor: 8%;
+    --room-col-status: 13%;
+    --room-col-timeline: 25%;
+    --room-col-price: 14%;
+    --room-col-actions: 30%;
 }
 
 .data-table.room-table {
     table-layout: fixed;
     width: 100%;
-    min-width: 760px;
+    min-width: 980px;
 }
 
 .data-table.room-table th,
@@ -493,14 +494,20 @@ a:hover {
 }
 
 .data-table.room-table col.col-price,
-.data-table.room-table th:nth-child(4),
-.data-table.room-table td:nth-child(4) {
+.data-table.room-table th:nth-child(5),
+.data-table.room-table td:nth-child(5) {
     width: var(--room-col-price);
 }
 
+.data-table.room-table col.col-timeline,
+.data-table.room-table th:nth-child(4),
+.data-table.room-table td:nth-child(4) {
+    width: var(--room-col-timeline);
+}
+
 .data-table.room-table col.col-actions,
-.data-table.room-table th:nth-child(5),
-.data-table.room-table td:nth-child(5) {
+.data-table.room-table th:nth-child(6),
+.data-table.room-table td:nth-child(6) {
     width: var(--room-col-actions);
 }
 
