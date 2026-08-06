@@ -115,6 +115,7 @@
                 <col class="col-room">
                 <col class="col-floor">
                 <col class="col-status">
+                <col class="col-timeline">
                 <col class="col-price">
                 <col class="col-actions">
             </colgroup>
@@ -123,6 +124,7 @@
                 <th>Room</th>
                 <th>Floor</th>
                 <th>Status</th>
+                <th>Active booking</th>
                 <th>Price / night</th>
                 <th>Update price</th>
             </tr>
@@ -130,7 +132,7 @@
             <tbody>
             <c:choose>
                 <c:when test="${empty standardRooms}">
-                    <tr><td colspan="5" class="empty-row">No standard rooms match filters.</td></tr>
+                    <tr><td colspan="6" class="empty-row">No standard rooms match filters.</td></tr>
                 </c:when>
                 <c:otherwise>
                     <c:forEach var="room" items="${standardRooms}">
@@ -138,6 +140,42 @@
                             <td><c:out value="${room.roomNumber}"/></td>
                             <td><c:out value="${room.floor}"/></td>
                             <td><c:out value="${room.status}"/></td>
+                            <c:set var="activeBooking" value="${activeRoomBookings[room.id]}"/>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${empty activeBooking}">
+                                        <span class="field-hint">No active booking</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:out value="${activeBooking.order.checkInDate}"/>
+                                        to
+                                        <c:out value="${activeBooking.order.checkOutDate}"/>
+                                        <br>
+                                        <span class="field-hint">
+                                            Booked rate:
+                                            RM
+                                            <fmt:formatNumber value="${activeBooking.pricePerNightSnapshot}"
+                                                              minFractionDigits="2"
+                                                              maxFractionDigits="2"/>
+                                            / night
+                                        </span>
+                                        <br>
+                                        <span class="field-hint">
+                                            Booking total:
+                                            RM
+                                            <fmt:formatNumber value="${activeBooking.lineTotal}"
+                                                              minFractionDigits="2"
+                                                              maxFractionDigits="2"/>
+                                        </span>
+                                        <br>
+                                        <span class="field-hint">
+                                            <c:out value="${activeBooking.order.customer.name}"/>
+                                            -
+                                            <c:out value="${activeBooking.order.orderNo}"/>
+                                        </span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
                             <td>RM <fmt:formatNumber value="${room.currentPrice}" minFractionDigits="2" maxFractionDigits="2"/></td>
                             <td class="actions">
                                 <div class="actions-inner">
@@ -158,7 +196,7 @@
                         </tr>
                     </c:forEach>
                     <tr class="live-search-empty empty-row" hidden>
-                        <td colspan="5">No matching standard rooms.</td>
+                        <td colspan="6">No matching standard rooms.</td>
                     </tr>
                 </c:otherwise>
             </c:choose>
@@ -181,6 +219,7 @@
                 <col class="col-room">
                 <col class="col-floor">
                 <col class="col-status">
+                <col class="col-timeline">
                 <col class="col-price">
                 <col class="col-actions">
             </colgroup>
@@ -189,6 +228,7 @@
                 <th>Room</th>
                 <th>Floor</th>
                 <th>Status</th>
+                <th>Active booking</th>
                 <th>Price / night</th>
                 <th>Update price</th>
             </tr>
@@ -196,7 +236,7 @@
             <tbody>
             <c:choose>
                 <c:when test="${empty vipRooms}">
-                    <tr><td colspan="5" class="empty-row">No VIP rooms match filters.</td></tr>
+                    <tr><td colspan="6" class="empty-row">No VIP rooms match filters.</td></tr>
                 </c:when>
                 <c:otherwise>
                     <c:forEach var="room" items="${vipRooms}">
@@ -204,6 +244,42 @@
                             <td><c:out value="${room.roomNumber}"/></td>
                             <td><c:out value="${room.floor}"/></td>
                             <td><c:out value="${room.status}"/></td>
+                            <c:set var="activeBooking" value="${activeRoomBookings[room.id]}"/>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${empty activeBooking}">
+                                        <span class="field-hint">No active booking</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:out value="${activeBooking.order.checkInDate}"/>
+                                        to
+                                        <c:out value="${activeBooking.order.checkOutDate}"/>
+                                        <br>
+                                        <span class="field-hint">
+                                            Booked rate:
+                                            RM
+                                            <fmt:formatNumber value="${activeBooking.pricePerNightSnapshot}"
+                                                              minFractionDigits="2"
+                                                              maxFractionDigits="2"/>
+                                            / night
+                                        </span>
+                                        <br>
+                                        <span class="field-hint">
+                                            Booking total:
+                                            RM
+                                            <fmt:formatNumber value="${activeBooking.lineTotal}"
+                                                              minFractionDigits="2"
+                                                              maxFractionDigits="2"/>
+                                        </span>
+                                        <br>
+                                        <span class="field-hint">
+                                            <c:out value="${activeBooking.order.customer.name}"/>
+                                            -
+                                            <c:out value="${activeBooking.order.orderNo}"/>
+                                        </span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
                             <td>RM <fmt:formatNumber value="${room.currentPrice}" minFractionDigits="2" maxFractionDigits="2"/></td>
                             <td class="actions">
                                 <div class="actions-inner">
@@ -224,7 +300,7 @@
                         </tr>
                     </c:forEach>
                     <tr class="live-search-empty empty-row" hidden>
-                        <td colspan="5">No matching VIP rooms.</td>
+                        <td colspan="6">No matching VIP rooms.</td>
                     </tr>
                 </c:otherwise>
             </c:choose>
@@ -247,6 +323,7 @@
                 <col class="col-room">
                 <col class="col-floor">
                 <col class="col-status">
+                <col class="col-timeline">
                 <col class="col-price">
                 <col class="col-actions">
             </colgroup>
@@ -255,6 +332,7 @@
                 <th>Room</th>
                 <th>Floor</th>
                 <th>Status</th>
+                <th>Active booking</th>
                 <th>Price / night</th>
                 <th>Update price</th>
             </tr>
@@ -262,7 +340,7 @@
             <tbody>
             <c:choose>
                 <c:when test="${empty presidentialRooms}">
-                    <tr><td colspan="5" class="empty-row">No presidential rooms match filters.</td></tr>
+                    <tr><td colspan="6" class="empty-row">No presidential rooms match filters.</td></tr>
                 </c:when>
                 <c:otherwise>
                     <c:forEach var="room" items="${presidentialRooms}">
@@ -270,6 +348,42 @@
                             <td><c:out value="${room.roomNumber}"/></td>
                             <td><c:out value="${room.floor}"/></td>
                             <td><c:out value="${room.status}"/></td>
+                            <c:set var="activeBooking" value="${activeRoomBookings[room.id]}"/>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${empty activeBooking}">
+                                        <span class="field-hint">No active booking</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:out value="${activeBooking.order.checkInDate}"/>
+                                        to
+                                        <c:out value="${activeBooking.order.checkOutDate}"/>
+                                        <br>
+                                        <span class="field-hint">
+                                            Booked rate:
+                                            RM
+                                            <fmt:formatNumber value="${activeBooking.pricePerNightSnapshot}"
+                                                              minFractionDigits="2"
+                                                              maxFractionDigits="2"/>
+                                            / night
+                                        </span>
+                                        <br>
+                                        <span class="field-hint">
+                                            Booking total:
+                                            RM
+                                            <fmt:formatNumber value="${activeBooking.lineTotal}"
+                                                              minFractionDigits="2"
+                                                              maxFractionDigits="2"/>
+                                        </span>
+                                        <br>
+                                        <span class="field-hint">
+                                            <c:out value="${activeBooking.order.customer.name}"/>
+                                            -
+                                            <c:out value="${activeBooking.order.orderNo}"/>
+                                        </span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
                             <td>RM <fmt:formatNumber value="${room.currentPrice}" minFractionDigits="2" maxFractionDigits="2"/></td>
                             <td class="actions">
                                 <div class="actions-inner">
@@ -290,7 +404,7 @@
                         </tr>
                     </c:forEach>
                     <tr class="live-search-empty empty-row" hidden>
-                        <td colspan="5">No matching presidential rooms.</td>
+                        <td colspan="6">No matching presidential rooms.</td>
                     </tr>
                 </c:otherwise>
             </c:choose>

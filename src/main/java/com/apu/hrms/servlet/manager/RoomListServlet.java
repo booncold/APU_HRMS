@@ -1,8 +1,10 @@
 package com.apu.hrms.servlet.manager;
 
+import com.apu.hrms.entity.BookingRoom;
 import com.apu.hrms.entity.Room;
 import com.apu.hrms.entity.RoomStatus;
 import com.apu.hrms.entity.RoomType;
+import com.apu.hrms.facade.BookingFacade;
 import com.apu.hrms.facade.RoomFacade;
 import com.apu.hrms.util.ValidationUtil;
 import jakarta.ejb.EJB;
@@ -14,7 +16,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/manager/rooms")
 public class RoomListServlet extends HttpServlet {
@@ -24,6 +28,9 @@ public class RoomListServlet extends HttpServlet {
 
     @EJB
     private RoomFacade roomFacade;
+
+    @EJB
+    private BookingFacade bookingFacade;
 
     @Override
     protected void doGet(
@@ -50,9 +57,21 @@ public class RoomListServlet extends HttpServlet {
             }
         }
 
+        Map<Long, BookingRoom> activeRoomBookings = new HashMap<>();
+        for (BookingRoom bookingRoom : bookingFacade.findActiveRoomBookings()) {
+            if (bookingRoom.getRoom() != null
+                    && bookingRoom.getRoom().getId() != null) {
+                activeRoomBookings.putIfAbsent(
+                        bookingRoom.getRoom().getId(),
+                        bookingRoom
+                );
+            }
+        }
+
         request.setAttribute("standardRooms", standardRooms);
         request.setAttribute("vipRooms", vipRooms);
         request.setAttribute("presidentialRooms", presidentialRooms);
+        request.setAttribute("activeRoomBookings", activeRoomBookings);
         request.setAttribute("totalRoomCount", rooms.size());
         request.setAttribute("filterType", typeFilter == null ? "" : typeFilter.name());
         request.setAttribute("filterFloor", floorFilter == null ? "" : String.valueOf(floorFilter));

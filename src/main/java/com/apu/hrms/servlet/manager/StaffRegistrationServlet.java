@@ -115,6 +115,9 @@ public class StaffRegistrationServlet extends HttpServlet {
                     "actorIsSeedAdmin",
                     actor != null && actor.isSeedAdmin()
             );
+            if (!errors.containsKey("password")) {
+                request.setAttribute("enteredPassword", password);
+            }
             preserveInput(
                     request,
                     name,
