@@ -3,6 +3,7 @@ package com.apu.hrms.servlet.customer;
 import com.apu.hrms.entity.BookingOrder;
 import com.apu.hrms.entity.Room;
 import com.apu.hrms.entity.RoomStatus;
+import com.apu.hrms.entity.RoomType;
 import com.apu.hrms.entity.User;
 import com.apu.hrms.facade.BookingFacade;
 import com.apu.hrms.facade.RoomFacade;
@@ -22,6 +23,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -237,15 +239,82 @@ public class CustomerBookServlet extends HttpServlet {
     }
 
     private void prepareForm(HttpServletRequest request) {
-        request.setAttribute("availableRooms", roomFacade.findAvailable());
-        request.setAttribute("today", LocalDate.now().toString());
-        request.setAttribute("maxCheckIn", LocalDate.now().plusDays(5).toString());
+        List<Room> availableRooms = roomFacade.findAvailable();
+        List<Room> standardRooms = new ArrayList<>();
+        List<Room> vipRooms = new ArrayList<>();
+        List<Room> presidentialRooms = new ArrayList<>();
+
+        for (Room room : availableRooms) {
+            if (room.getRoomType() == RoomType.STANDARD) {
+                standardRooms.add(room);
+            } else if (room.getRoomType() == RoomType.VIP) {
+                vipRooms.add(room);
+            } else if (room.getRoomType() == RoomType.PRESIDENTIAL) {
+                presidentialRooms.add(room);
+            }
+        }
+
+        request.setAttribute("availableRooms", availableRooms);
+        request.setAttribute("standardRooms", standardRooms);
+        request.setAttribute("vipRooms", vipRooms);
+        request.setAttribute("presidentialRooms", presidentialRooms);
+        request.setAttribute(
+                "standardPrice",
+                lowestAvailablePrice(standardRooms, RoomType.STANDARD)
+        );
+        request.setAttribute(
+                "vipPrice",
+                lowestAvailablePrice(vipRooms, RoomType.VIP)
+        );
+        request.setAttribute(
+                "presidentialPrice",
+                lowestAvailablePrice(presidentialRooms, RoomType.PRESIDENTIAL)
+        );
+
+        LocalDate today = LocalDate.now();
+        LocalDate maxCheckIn = today.plusDays(5);
+        request.setAttribute("today", today.toString());
+        request.setAttribute("maxCheckIn", maxCheckIn.toString());
         if (request.getAttribute("enteredCheckIn") == null) {
-            request.setAttribute("enteredCheckIn", LocalDate.now().toString());
+            String requestedDate = ValidationUtil.trim(
+                    request.getParameter("checkInDate")
+            );
+            try {
+                LocalDate parsed = LocalDate.parse(requestedDate);
+                request.setAttribute(
+                        "enteredCheckIn",
+                        parsed.isBefore(today) || parsed.isAfter(maxCheckIn)
+                                ? today.toString()
+                                : parsed.toString()
+                );
+            } catch (Exception ignored) {
+                request.setAttribute("enteredCheckIn", today.toString());
+            }
         }
         if (request.getAttribute("enteredNights") == null) {
-            request.setAttribute("enteredNights", "1");
+            String requestedNights = ValidationUtil.trim(
+                    request.getParameter("nights")
+            );
+            try {
+                int parsed = Integer.parseInt(requestedNights);
+                request.setAttribute(
+                        "enteredNights",
+                        parsed >= 1 && parsed <= 30 ? String.valueOf(parsed) : "1"
+                );
+            } catch (Exception ignored) {
+                request.setAttribute("enteredNights", "1");
+            }
         }
+    }
+
+    private BigDecimal lowestAvailablePrice(
+            List<Room> rooms,
+            RoomType roomType
+    ) {
+        return rooms.stream()
+                .map(Room::getCurrentPrice)
+                .min(Comparator.naturalOrder())
+                .orElse(roomType.getDefaultPrice());
     }
 
     private List<Long> parseRoomIds(String csv) {
