@@ -441,7 +441,7 @@
     .room-door-card.is-mine {
         --door-colour: #ad5045;
         --door-border: #7f332c;
-        --door-text: #ffffff;
+        --door-text: #1f1712;
         --door-accent: #ffe1b8;
     }
 
