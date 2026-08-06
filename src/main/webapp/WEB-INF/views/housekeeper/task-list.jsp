@@ -20,6 +20,33 @@
     </div>
 </c:if>
 
+<c:if test="${not empty feedbackTask}">
+    <section class="form-panel" style="margin-bottom: 28px;">
+        <h2 class="list-section-title" style="margin-bottom: 12px;">
+            Feedback for room <c:out value="${feedbackTask.room.roomNumber}"/>
+        </h2>
+        <form method="post" action="${ctx}/housekeeper/tasks">
+            <input type="hidden" name="action" value="feedback">
+            <input type="hidden" name="taskId" value="${feedbackTask.id}">
+
+            <div class="form-group full-width">
+                <label for="content">Feedback</label>
+                <textarea id="content"
+                          name="content"
+                          rows="5"
+                          maxlength="2000"
+                          required
+                          placeholder="Describe room condition, supplies needed, or issues found..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <a class="btn-secondary" href="${ctx}/housekeeper/tasks">Cancel</a>
+                <button class="btn-primary" type="submit">Submit feedback</button>
+            </div>
+        </form>
+    </section>
+</c:if>
+
 <section class="list-section">
     <div class="list-section-header">
         <h2 class="list-section-title">Open tasks</h2>
@@ -59,6 +86,7 @@
                                 <div class="actions-inner">
                                     <form method="post" action="${ctx}/housekeeper/tasks"
                                           onsubmit="return confirm('Mark room ${t.room.roomNumber} as cleaned?');">
+                                        <input type="hidden" name="action" value="complete">
                                         <input type="hidden" name="taskId" value="${t.id}">
                                         <button class="btn-primary" type="submit"
                                                 style="min-height:32px; height:32px; padding:0 12px; font-size:13px;">
@@ -66,7 +94,7 @@
                                         </button>
                                     </form>
                                     <a class="btn-link"
-                                       href="${ctx}/housekeeper/feedback?roomId=${t.room.id}">
+                                       href="${ctx}/housekeeper/tasks?feedbackTaskId=${t.id}">
                                         Feedback
                                     </a>
                                 </div>
@@ -97,13 +125,14 @@
                 <th>Assigned at</th>
                 <th>Completed at</th>
                 <th>Notes</th>
+                <th>Actions</th>
             </tr>
             </thead>
             <tbody>
             <c:choose>
                 <c:when test="${empty allTasks}">
                     <tr>
-                        <td colspan="5" class="empty-row">No tasks assigned yet.</td>
+                        <td colspan="6" class="empty-row">No tasks assigned yet.</td>
                     </tr>
                 </c:when>
                 <c:otherwise>
@@ -119,6 +148,14 @@
                                 </c:choose>
                             </td>
                             <td><c:out value="${empty t.notes ? '—' : t.notes}"/></td>
+                            <td class="actions">
+                                <div class="actions-inner">
+                                    <a class="btn-link"
+                                       href="${ctx}/housekeeper/tasks?feedbackTaskId=${t.id}">
+                                        Feedback
+                                    </a>
+                                </div>
+                            </td>
                         </tr>
                     </c:forEach>
                 </c:otherwise>

@@ -170,7 +170,6 @@
 
             <div class="hk-task-actions">
                 <a class="btn-primary" href="${ctx}/housekeeper/tasks">Open My Tasks</a>
-                <a class="btn-secondary" href="${ctx}/housekeeper/feedback">Write Feedback</a>
             </div>
         </aside>
     </div>
@@ -442,7 +441,7 @@
     .room-door-card.is-mine {
         --door-colour: #ad5045;
         --door-border: #7f332c;
-        --door-text: #ffffff;
+        --door-text: #1f1712;
         --door-accent: #ffe1b8;
     }
 
@@ -625,7 +624,7 @@
 
     .hk-task-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
         gap: 9px;
         margin-top: 15px;
         padding-top: 15px;

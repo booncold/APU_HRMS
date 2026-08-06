@@ -3,7 +3,6 @@ package com.apu.hrms.servlet.housekeeper;
 import com.apu.hrms.entity.Feedback;
 import com.apu.hrms.entity.User;
 import com.apu.hrms.facade.FeedbackFacade;
-import com.apu.hrms.facade.RoomFacade;
 import com.apu.hrms.facade.UserFacade;
 import com.apu.hrms.util.SessionUtil;
 import jakarta.ejb.EJB;
@@ -20,13 +19,8 @@ import java.nio.charset.StandardCharsets;
 @WebServlet("/housekeeper/feedback")
 public class HousekeeperFeedbackServlet extends HttpServlet {
 
-    private static final String PAGE = "/WEB-INF/views/housekeeper/feedback-form.jsp";
-
     @EJB
     private FeedbackFacade feedbackFacade;
-
-    @EJB
-    private RoomFacade roomFacade;
 
     @EJB
     private UserFacade userFacade;
@@ -43,13 +37,7 @@ public class HousekeeperFeedbackServlet extends HttpServlet {
             return;
         }
 
-        request.setAttribute("rooms", roomFacade.findAllActive());
-        request.setAttribute("myFeedbacks", feedbackFacade.findByHousekeeper(me));
-        request.setAttribute("successMessage", request.getParameter("success"));
-        request.setAttribute("errorMessage", request.getParameter("error"));
-        request.setAttribute("preselectRoomId", request.getParameter("roomId"));
-
-        request.getRequestDispatcher(PAGE).forward(request, response);
+        response.sendRedirect(request.getContextPath() + "/housekeeper/tasks");
     }
 
     @Override
@@ -72,12 +60,11 @@ public class HousekeeperFeedbackServlet extends HttpServlet {
             String msg = "Feedback saved for room "
                     + feedback.getRoom().getRoomNumber() + ".";
             response.sendRedirect(
-                    ctx + "/housekeeper/feedback?success=" + encode(msg)
+                    ctx + "/housekeeper/tasks?success=" + encode(msg)
             );
         } catch (IllegalArgumentException ex) {
             response.sendRedirect(
-                    ctx + "/housekeeper/feedback?error=" + encode(ex.getMessage())
-                            + (roomId == null ? "" : "&roomId=" + roomId)
+                    ctx + "/housekeeper/tasks?error=" + encode(ex.getMessage())
             );
         }
     }
