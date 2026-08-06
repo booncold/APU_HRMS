@@ -140,7 +140,7 @@
 
     <c:if test="${not empty demoResetLink}">
         <div class="demo-link">
-            <strong>Demo reset link</strong> (SMTP not configured or send failed):
+            <strong>Demo reset link</strong>:
             <br>
             <a href="${demoResetLink}"><c:out value="${demoResetLink}"/></a>
         </div>

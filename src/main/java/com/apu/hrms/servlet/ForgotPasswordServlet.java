@@ -47,8 +47,7 @@ public class ForgotPasswordServlet extends HttpServlet {
 
         // Always show the same base message (anti-enumeration)
         String info =
-                "If an account exists for that email, a password reset link has been prepared. "
-                        + "Check your inbox (or the demo link below when SMTP is not configured).";
+                "If an account exists for that email, a password reset link has been prepared.";
 
         String token = passwordResetFacade.requestResetToken(email);
         boolean mailed = false;
