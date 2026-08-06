@@ -10,6 +10,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * Manager reports page. Chart data is embedded as JSON for Chart.js.
@@ -29,33 +32,111 @@ public class ManagerReportServlet extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        request.setAttribute("summary", reportFacade.summaryCards());
+        String range = normaliseRange(request.getParameter("range"));
+        int days = switch (range) {
+            case "day" -> 1;
+            case "month" -> 30;
+            default -> 7;
+        };
+
+        LocalDate periodEnd = LocalDate.now();
+        LocalDate periodStart = periodEnd.minusDays(days - 1L);
+        LocalDate periodEndExclusive = periodEnd.plusDays(1);
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern(
+                "dd MMM yyyy",
+                Locale.ENGLISH
+        );
+
+        request.setAttribute("selectedRange", range);
+        request.setAttribute("periodDays", days);
+        request.setAttribute(
+                "periodLabel",
+                switch (range) {
+                    case "day" -> "Today";
+                    case "month" -> "Last 30 days";
+                    default -> "Last 7 days";
+                }
+        );
+        request.setAttribute(
+                "periodDateDisplay",
+                days == 1
+                        ? periodEnd.format(dateFormat)
+                        : periodStart.format(dateFormat)
+                        + " - "
+                        + periodEnd.format(dateFormat)
+        );
+
+        request.setAttribute(
+                "summary",
+                reportFacade.summaryCards(periodStart, periodEndExclusive)
+        );
         request.setAttribute(
                 "occupancyFloorJson",
-                JsonLite.toJson(reportFacade.occupancyByFloor())
+                JsonLite.toJson(
+                        reportFacade.occupancyByFloor(
+                                periodStart,
+                                periodEndExclusive
+                        )
+                )
         );
         request.setAttribute(
                 "occupancyTypeJson",
-                JsonLite.toJson(reportFacade.occupancyByType())
+                JsonLite.toJson(
+                        reportFacade.occupancyByType(
+                                periodStart,
+                                periodEndExclusive
+                        )
+                )
         );
         request.setAttribute(
                 "revenueJson",
-                JsonLite.toJson(reportFacade.revenueLastDays(14))
+                JsonLite.toJson(
+                        reportFacade.revenueByDate(
+                                periodStart,
+                                periodEndExclusive
+                        )
+                )
         );
         request.setAttribute(
                 "statusJson",
-                JsonLite.toJson(reportFacade.bookingStatusDistribution())
+                JsonLite.toJson(
+                        reportFacade.bookingStatusDistribution(
+                                periodStart,
+                                periodEndExclusive
+                        )
+                )
         );
         request.setAttribute(
                 "hkJson",
-                JsonLite.toJson(reportFacade.housekeeperCompletions())
+                JsonLite.toJson(
+                        reportFacade.housekeeperCompletions(
+                                periodStart,
+                                periodEndExclusive
+                        )
+                )
         );
         request.setAttribute(
                 "activityJson",
-                JsonLite.toJson(reportFacade.feedbackAndCommentCounts())
+                JsonLite.toJson(
+                        reportFacade.feedbackAndCommentCounts(
+                                periodStart,
+                                periodEndExclusive
+                        )
+                )
         );
 
         request.getRequestDispatcher(PAGE).forward(request, response);
+    }
+
+    private String normaliseRange(String raw) {
+        if (raw == null) {
+            return "week";
+        }
+        return switch (raw.trim().toLowerCase(Locale.ENGLISH)) {
+            case "day" -> "day";
+            case "month" -> "month";
+            default -> "week";
+        };
     }
 
 }

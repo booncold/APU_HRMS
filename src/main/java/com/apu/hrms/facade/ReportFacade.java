@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -363,6 +364,479 @@ public class ReportFacade {
                 .setParameter("st", PaymentStatus.PAID)
                 .getSingleResult());
         return cards;
+    }
+
+    /**
+     * Occupancy for a selected reporting window. The percentage is based on
+     * occupied room nights divided by the available room-night capacity.
+     */
+    public Map<String, Object> occupancyByFloor(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        List<Object[]> roomRows = entityManager
+                .createQuery(
+                        "SELECT r.floor, COUNT(r) FROM Room r "
+                                + "WHERE r.deleted = false "
+                                + "GROUP BY r.floor ORDER BY r.floor",
+                        Object[].class
+                )
+                .getResultList();
+
+        Map<Integer, long[]> byFloor = new LinkedHashMap<>();
+        for (Object[] row : roomRows) {
+            byFloor.put((Integer) row[0], new long[]{(Long) row[1], 0L});
+        }
+
+        List<Object[]> stayRows = entityManager
+                .createQuery(
+                        "SELECT br.room.floor, o.checkInDate, o.checkOutDate "
+                                + "FROM BookingRoom br JOIN br.order o "
+                                + "WHERE br.room.deleted = false "
+                                + "AND br.status <> :roomCancelled "
+                                + "AND o.status <> :orderCancelled "
+                                + "AND o.status <> :pendingPayment "
+                                + "AND o.checkInDate < :periodEnd "
+                                + "AND o.checkOutDate > :periodStart",
+                        Object[].class
+                )
+                .setParameter("roomCancelled", BookingRoomStatus.CANCELLED)
+                .setParameter("orderCancelled", OrderStatus.CANCELLED)
+                .setParameter("pendingPayment", OrderStatus.PENDING_PAYMENT)
+                .setParameter("periodStart", periodStart)
+                .setParameter("periodEnd", periodEndExclusive)
+                .getResultList();
+
+        for (Object[] row : stayRows) {
+            long[] bucket = byFloor.get((Integer) row[0]);
+            if (bucket != null) {
+                bucket[1] += overlappingNights(
+                        (LocalDate) row[1],
+                        (LocalDate) row[2],
+                        periodStart,
+                        periodEndExclusive
+                );
+            }
+        }
+
+        return occupancyResult(byFloor, periodStart, periodEndExclusive,
+                "Occupancy rate by floor (%)");
+    }
+
+    /**
+     * Room-night occupancy grouped by room tier for the selected window.
+     */
+    public Map<String, Object> occupancyByType(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        List<Object[]> roomRows = entityManager
+                .createQuery(
+                        "SELECT r.roomType, COUNT(r) FROM Room r "
+                                + "WHERE r.deleted = false "
+                                + "GROUP BY r.roomType",
+                        Object[].class
+                )
+                .getResultList();
+
+        Map<RoomType, long[]> byType = new LinkedHashMap<>();
+        for (RoomType type : RoomType.values()) {
+            byType.put(type, new long[2]);
+        }
+        for (Object[] row : roomRows) {
+            long[] bucket = byType.get((RoomType) row[0]);
+            if (bucket != null) {
+                bucket[0] = (Long) row[1];
+            }
+        }
+
+        List<Object[]> stayRows = entityManager
+                .createQuery(
+                        "SELECT br.roomTypeSnapshot, o.checkInDate, o.checkOutDate "
+                                + "FROM BookingRoom br JOIN br.order o "
+                                + "WHERE br.room.deleted = false "
+                                + "AND br.status <> :roomCancelled "
+                                + "AND o.status <> :orderCancelled "
+                                + "AND o.status <> :pendingPayment "
+                                + "AND o.checkInDate < :periodEnd "
+                                + "AND o.checkOutDate > :periodStart",
+                        Object[].class
+                )
+                .setParameter("roomCancelled", BookingRoomStatus.CANCELLED)
+                .setParameter("orderCancelled", OrderStatus.CANCELLED)
+                .setParameter("pendingPayment", OrderStatus.PENDING_PAYMENT)
+                .setParameter("periodStart", periodStart)
+                .setParameter("periodEnd", periodEndExclusive)
+                .getResultList();
+
+        for (Object[] row : stayRows) {
+            long[] bucket = byType.get((RoomType) row[0]);
+            if (bucket != null) {
+                bucket[1] += overlappingNights(
+                        (LocalDate) row[1],
+                        (LocalDate) row[2],
+                        periodStart,
+                        periodEndExclusive
+                );
+            }
+        }
+
+        long periodDays = reportPeriodDays(periodStart, periodEndExclusive);
+        List<String> labels = new ArrayList<>();
+        List<BigDecimal> values = new ArrayList<>();
+        for (Map.Entry<RoomType, long[]> entry : byType.entrySet()) {
+            labels.add(titleCaseEnum(entry.getKey().name()));
+            values.add(occupancyPercentage(
+                    entry.getValue()[0],
+                    entry.getValue()[1],
+                    periodDays
+            ));
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("labels", labels);
+        result.put("values", values);
+        result.put("title", "Occupancy rate by room type (%)");
+        return result;
+    }
+
+    /**
+     * Paid revenue per day inside the selected reporting window.
+     */
+    public Map<String, Object> revenueByDate(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        LocalDateTime startDt = periodStart.atStartOfDay();
+        LocalDateTime endDt = periodEndExclusive.atStartOfDay();
+
+        List<Object[]> rows = entityManager
+                .createQuery(
+                        "SELECT p.paidAt, p.amount FROM Payment p "
+                                + "WHERE p.status = :status "
+                                + "AND p.paidAt IS NOT NULL "
+                                + "AND p.paidAt >= :start "
+                                + "AND p.paidAt < :end",
+                        Object[].class
+                )
+                .setParameter("status", PaymentStatus.PAID)
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getResultList();
+
+        Map<String, BigDecimal> byDay = new LinkedHashMap<>();
+        for (LocalDate date = periodStart;
+             date.isBefore(periodEndExclusive);
+             date = date.plusDays(1)) {
+            byDay.put(date.toString(), BigDecimal.ZERO.setScale(2));
+        }
+        for (Object[] row : rows) {
+            LocalDateTime paidAt = (LocalDateTime) row[0];
+            if (paidAt == null) {
+                continue;
+            }
+            String key = paidAt.toLocalDate().toString();
+            BigDecimal amount = row[1] instanceof BigDecimal bd
+                    ? bd
+                    : BigDecimal.valueOf(((Number) row[1]).doubleValue());
+            if (byDay.containsKey(key)) {
+                byDay.put(
+                        key,
+                        byDay.get(key).add(amount).setScale(2, RoundingMode.HALF_UP)
+                );
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("labels", new ArrayList<>(byDay.keySet()));
+        result.put("values", new ArrayList<>(byDay.values()));
+        result.put("title", "Paid revenue (RM)");
+        return result;
+    }
+
+    /**
+     * Booking orders created inside the selected reporting window.
+     */
+    public Map<String, Object> bookingStatusDistribution(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        List<Object[]> rows = entityManager
+                .createQuery(
+                        "SELECT o.status, COUNT(o) FROM BookingOrder o "
+                                + "WHERE o.createdAt >= :start "
+                                + "AND o.createdAt < :end "
+                                + "GROUP BY o.status",
+                        Object[].class
+                )
+                .setParameter("start", periodStart.atStartOfDay())
+                .setParameter("end", periodEndExclusive.atStartOfDay())
+                .getResultList();
+
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (OrderStatus status : OrderStatus.values()) {
+            counts.put(titleCaseEnum(status.name()), 0L);
+        }
+        for (Object[] row : rows) {
+            counts.put(
+                    titleCaseEnum(((OrderStatus) row[0]).name()),
+                    (Long) row[1]
+            );
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("labels", new ArrayList<>(counts.keySet()));
+        result.put("values", new ArrayList<>(counts.values()));
+        result.put("title", "Booking status distribution");
+        return result;
+    }
+
+    /**
+     * Cleaning tasks completed inside the selected reporting window.
+     */
+    public Map<String, Object> housekeeperCompletions(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        List<Object[]> rows = entityManager
+                .createQuery(
+                        "SELECT t.housekeeper.name, COUNT(t) FROM CleaningTask t "
+                                + "WHERE t.status = :status "
+                                + "AND t.completedAt >= :start "
+                                + "AND t.completedAt < :end "
+                                + "GROUP BY t.housekeeper.name "
+                                + "ORDER BY COUNT(t) DESC",
+                        Object[].class
+                )
+                .setParameter("status", CleaningTaskStatus.COMPLETED)
+                .setParameter("start", periodStart.atStartOfDay())
+                .setParameter("end", periodEndExclusive.atStartOfDay())
+                .getResultList();
+
+        List<String> labels = new ArrayList<>();
+        List<Long> values = new ArrayList<>();
+        for (Object[] row : rows) {
+            labels.add(String.valueOf(row[0]));
+            values.add((Long) row[1]);
+        }
+        if (labels.isEmpty()) {
+            labels.add("No completed tasks");
+            values.add(0L);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("labels", labels);
+        result.put("values", values);
+        result.put("title", "Housekeeper completed tasks");
+        return result;
+    }
+
+    /**
+     * Feedbacks, comments and newly registered customers in the period.
+     */
+    public Map<String, Object> feedbackAndCommentCounts(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        LocalDateTime startDt = periodStart.atStartOfDay();
+        LocalDateTime endDt = periodEndExclusive.atStartOfDay();
+
+        long feedbacks = entityManager
+                .createQuery(
+                        "SELECT COUNT(f) FROM Feedback f "
+                                + "WHERE f.createdAt >= :start AND f.createdAt < :end",
+                        Long.class
+                )
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getSingleResult();
+        long comments = entityManager
+                .createQuery(
+                        "SELECT COUNT(c) FROM Comment c "
+                                + "WHERE c.createdAt >= :start AND c.createdAt < :end",
+                        Long.class
+                )
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getSingleResult();
+        long customers = entityManager
+                .createQuery(
+                        "SELECT COUNT(u) FROM User u "
+                                + "WHERE u.deleted = false "
+                                + "AND u.role = com.apu.hrms.entity.UserRole.CUSTOMER "
+                                + "AND u.createdAt >= :start AND u.createdAt < :end",
+                        Long.class
+                )
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getSingleResult();
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("labels", List.of("Feedbacks", "Comments", "New customers"));
+        result.put("values", List.of(feedbacks, comments, customers));
+        result.put("title", "Engagement activity");
+        return result;
+    }
+
+    /**
+     * Summary values that all use the same selected reporting window.
+     */
+    public Map<String, Object> summaryCards(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        LocalDateTime startDt = periodStart.atStartOfDay();
+        LocalDateTime endDt = periodEndExclusive.atStartOfDay();
+
+        Map<String, Object> cards = new LinkedHashMap<>();
+        cards.put("newCustomers", entityManager
+                .createQuery(
+                        "SELECT COUNT(u) FROM User u "
+                                + "WHERE u.deleted = false "
+                                + "AND u.role = com.apu.hrms.entity.UserRole.CUSTOMER "
+                                + "AND u.createdAt >= :start AND u.createdAt < :end",
+                        Long.class
+                )
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getSingleResult());
+        cards.put("orders", entityManager
+                .createQuery(
+                        "SELECT COUNT(o) FROM BookingOrder o "
+                                + "WHERE o.createdAt >= :start AND o.createdAt < :end",
+                        Long.class
+                )
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getSingleResult());
+        cards.put(
+                "roomNights",
+                occupiedRoomNights(periodStart, periodEndExclusive)
+        );
+        cards.put("completedTasks", entityManager
+                .createQuery(
+                        "SELECT COUNT(t) FROM CleaningTask t "
+                                + "WHERE t.status = :status "
+                                + "AND t.completedAt >= :start AND t.completedAt < :end",
+                        Long.class
+                )
+                .setParameter("status", CleaningTaskStatus.COMPLETED)
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getSingleResult());
+        cards.put("paidRevenue", entityManager
+                .createQuery(
+                        "SELECT COALESCE(SUM(p.amount), 0) FROM Payment p "
+                                + "WHERE p.status = :status "
+                                + "AND p.paidAt >= :start AND p.paidAt < :end",
+                        BigDecimal.class
+                )
+                .setParameter("status", PaymentStatus.PAID)
+                .setParameter("start", startDt)
+                .setParameter("end", endDt)
+                .getSingleResult());
+        return cards;
+    }
+
+    private Map<String, Object> occupancyResult(
+            Map<Integer, long[]> buckets,
+            LocalDate periodStart,
+            LocalDate periodEndExclusive,
+            String title
+    ) {
+        long periodDays = reportPeriodDays(periodStart, periodEndExclusive);
+        List<String> labels = new ArrayList<>();
+        List<BigDecimal> values = new ArrayList<>();
+        for (Map.Entry<Integer, long[]> entry : buckets.entrySet()) {
+            labels.add("Floor " + entry.getKey());
+            values.add(occupancyPercentage(
+                    entry.getValue()[0],
+                    entry.getValue()[1],
+                    periodDays
+            ));
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("labels", labels);
+        result.put("values", values);
+        result.put("title", title);
+        return result;
+    }
+
+    private BigDecimal occupancyPercentage(
+            long roomCount,
+            long occupiedNights,
+            long periodDays
+    ) {
+        long capacity = roomCount * periodDays;
+        if (capacity <= 0) {
+            return BigDecimal.ZERO.setScale(1);
+        }
+        long used = Math.min(Math.max(occupiedNights, 0), capacity);
+        return BigDecimal.valueOf(used * 100.0 / capacity)
+                .setScale(1, RoundingMode.HALF_UP);
+    }
+
+    private long occupiedRoomNights(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        List<Object[]> rows = entityManager
+                .createQuery(
+                        "SELECT o.checkInDate, o.checkOutDate "
+                                + "FROM BookingRoom br JOIN br.order o "
+                                + "WHERE br.room.deleted = false "
+                                + "AND br.status <> :roomCancelled "
+                                + "AND o.status <> :orderCancelled "
+                                + "AND o.status <> :pendingPayment "
+                                + "AND o.checkInDate < :periodEnd "
+                                + "AND o.checkOutDate > :periodStart",
+                        Object[].class
+                )
+                .setParameter("roomCancelled", BookingRoomStatus.CANCELLED)
+                .setParameter("orderCancelled", OrderStatus.CANCELLED)
+                .setParameter("pendingPayment", OrderStatus.PENDING_PAYMENT)
+                .setParameter("periodStart", periodStart)
+                .setParameter("periodEnd", periodEndExclusive)
+                .getResultList();
+
+        long nights = 0;
+        for (Object[] row : rows) {
+            nights += overlappingNights(
+                    (LocalDate) row[0],
+                    (LocalDate) row[1],
+                    periodStart,
+                    periodEndExclusive
+            );
+        }
+        return nights;
+    }
+
+    private static long overlappingNights(
+            LocalDate stayStart,
+            LocalDate stayEnd,
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        LocalDate overlapStart = stayStart.isAfter(periodStart)
+                ? stayStart
+                : periodStart;
+        LocalDate overlapEnd = stayEnd.isBefore(periodEndExclusive)
+                ? stayEnd
+                : periodEndExclusive;
+        return overlapEnd.isAfter(overlapStart)
+                ? ChronoUnit.DAYS.between(overlapStart, overlapEnd)
+                : 0L;
+    }
+
+    private static long reportPeriodDays(
+            LocalDate periodStart,
+            LocalDate periodEndExclusive
+    ) {
+        return Math.max(
+                ChronoUnit.DAYS.between(periodStart, periodEndExclusive),
+                1L
+        );
     }
 
     private static String titleCaseEnum(String name) {
