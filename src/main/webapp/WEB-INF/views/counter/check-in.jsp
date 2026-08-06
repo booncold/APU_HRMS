@@ -2,16 +2,11 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
-<c:set var="pageTitle" value="Check-in (Today)" scope="request"/>
+<c:set var="pageTitle" value="Check-in" scope="request"/>
 <c:set var="activeMenu" value="check-in" scope="request"/>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
-
-<p class="page-summary">
-    Today&apos;s arrivals (<c:out value="${today}"/>).
-    Check-in marks the physical room as occupied.
-</p>
 
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
@@ -51,6 +46,7 @@
             <th>Type</th>
             <th>Order</th>
             <th>Customer</th>
+            <th>Check-in date</th>
             <th>Nights</th>
             <th>Actions</th>
         </tr>
@@ -59,7 +55,7 @@
         <c:choose>
             <c:when test="${empty checkInList}">
                 <tr>
-                    <td colspan="6" class="empty-row">No rooms awaiting check-in today.</td>
+                    <td colspan="7" class="empty-row">No rooms are due for check-in yet.</td>
                 </tr>
             </c:when>
             <c:otherwise>
@@ -69,6 +65,14 @@
                         <td><c:out value="${line.roomTypeSnapshot}"/></td>
                         <td><c:out value="${line.order.orderNo}"/></td>
                         <td><c:out value="${line.order.customer.name}"/></td>
+                        <td>
+                            <div class="check-in-date-cell">
+                                <span><c:out value="${line.order.checkInDate}"/></span>
+                                <c:if test="${line.order.checkInDate lt today}">
+                                    <span class="overdue-badge">Overdue</span>
+                                </c:if>
+                            </div>
+                        </td>
                         <td><c:out value="${line.nights}"/></td>
                         <td class="actions">
                             <div class="actions-inner">
@@ -85,13 +89,36 @@
                     </tr>
                 </c:forEach>
                 <tr class="live-search-empty empty-row" hidden>
-                    <td colspan="6">No matching check-ins.</td>
+                    <td colspan="7">No matching check-ins.</td>
                 </tr>
             </c:otherwise>
         </c:choose>
         </tbody>
     </table>
 </div>
+
+<style>
+    .check-in-date-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .overdue-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 23px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: #fbe9e7;
+        color: #a33d35;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+</style>
 
 <script src="${ctx}/assets/js/live-search.js"></script>
 

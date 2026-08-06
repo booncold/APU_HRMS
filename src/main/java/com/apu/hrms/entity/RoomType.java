@@ -16,4 +16,12 @@ public enum RoomType {
     public BigDecimal getDefaultPrice() {
         return defaultPrice;
     }
+
+    public String getDisplayName() {
+        return switch (this) {
+            case STANDARD -> "Standard";
+            case VIP -> "VIP";
+            case PRESIDENTIAL -> "Presidential";
+        };
+    }
 }

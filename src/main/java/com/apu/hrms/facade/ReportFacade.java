@@ -56,6 +56,71 @@ public class ReportFacade {
     }
 
     /**
+     * Current available and total room inventory for every configured room type.
+     */
+    public List<Map<String, Object>> roomAvailabilityByType() {
+        List<Object[]> rows = entityManager
+                .createQuery(
+                        "SELECT r.roomType, r.status, COUNT(r) FROM Room r "
+                                + "WHERE r.deleted = false "
+                                + "GROUP BY r.roomType, r.status",
+                        Object[].class
+                )
+                .getResultList();
+
+        Map<RoomType, long[]> byType = new LinkedHashMap<>();
+        for (RoomType type : RoomType.values()) {
+            byType.put(type, new long[2]);
+        }
+
+        for (Object[] row : rows) {
+            RoomType type = (RoomType) row[0];
+            RoomStatus status = (RoomStatus) row[1];
+            long count = (Long) row[2];
+            long[] bucket = byType.get(type);
+            if (bucket == null) {
+                continue;
+            }
+            bucket[0] += count;
+            if (status == RoomStatus.AVAILABLE) {
+                bucket[1] += count;
+            }
+        }
+
+        List<Map<String, Object>> inventory = new ArrayList<>();
+        for (Map.Entry<RoomType, long[]> entry : byType.entrySet()) {
+            long total = entry.getValue()[0];
+            long available = entry.getValue()[1];
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("label", titleCaseEnum(entry.getKey().name()));
+            item.put("available", available);
+            item.put("total", total);
+            item.put("unavailable", Math.max(total - available, 0));
+            item.put("progressMax", Math.max(total, 1));
+            inventory.add(item);
+        }
+        return inventory;
+    }
+
+    /**
+     * Current submitted comments and feedbacks available for manager review.
+     */
+    public Map<String, Long> reviewQueueCounts() {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put(
+                "comments",
+                entityManager.createQuery("SELECT COUNT(c) FROM Comment c", Long.class)
+                        .getSingleResult()
+        );
+        counts.put(
+                "feedbacks",
+                entityManager.createQuery("SELECT COUNT(f) FROM Feedback f", Long.class)
+                        .getSingleResult()
+        );
+        return counts;
+    }
+
+    /**
      * Occupancy snapshot by floor: labels + percentage (BOOKED+OCCUPIED / total).
      */
     public Map<String, Object> occupancyByFloor() {
@@ -258,12 +323,9 @@ public class ReportFacade {
     }
 
     public Map<String, Object> feedbackAndCommentCounts() {
-        long feedbacks = entityManager
-                .createQuery("SELECT COUNT(f) FROM Feedback f", Long.class)
-                .getSingleResult();
-        long comments = entityManager
-                .createQuery("SELECT COUNT(c) FROM Comment c", Long.class)
-                .getSingleResult();
+        Map<String, Long> reviewCounts = reviewQueueCounts();
+        long feedbacks = reviewCounts.get("feedbacks");
+        long comments = reviewCounts.get("comments");
         long customers = entityManager
                 .createQuery(
                         "SELECT COUNT(u) FROM User u "

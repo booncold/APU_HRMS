@@ -8,10 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Paid booking receipts. Open a receipt for print-friendly view.
-</p>
-
 <div class="toolbar">
     <form class="toolbar-form" action="#" onsubmit="return false;">
         <input class="live-search-input"

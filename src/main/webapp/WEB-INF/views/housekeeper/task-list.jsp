@@ -8,10 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Open cleaning tasks assigned to you. Completing a task sets the room to available.
-</p>
-
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
         <c:out value="${successMessage}"/>

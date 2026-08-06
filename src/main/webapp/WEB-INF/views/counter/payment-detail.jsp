@@ -8,11 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Review booking details and complete full prepayment.
-    Room prices below are snapshots for this order.
-</p>
-
 <section class="form-panel" style="max-width: none;">
     <h2 class="list-section-title" style="margin-bottom: 16px;">Booking summary</h2>
 

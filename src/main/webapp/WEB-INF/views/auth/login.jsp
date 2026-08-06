@@ -132,7 +132,7 @@
 
             color: var(--main-text);
 
-            font-family: Georgia, "Times New Roman", serif;
+            font-family: var(--font-display);
             font-size: 24px;
             font-weight: 700;
             letter-spacing: 0.5px;
@@ -159,7 +159,7 @@
 
             color: var(--main-text);
 
-            font-family: Georgia, "Times New Roman", serif;
+            font-family: var(--font-display);
             font-size: 31px;
             line-height: 1.25;
             font-weight: 700;

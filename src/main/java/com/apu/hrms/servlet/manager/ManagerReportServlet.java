@@ -1,6 +1,7 @@
 package com.apu.hrms.servlet.manager;
 
 import com.apu.hrms.facade.ReportFacade;
+import com.apu.hrms.util.JsonLite;
 import jakarta.ejb.EJB;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -57,58 +58,4 @@ public class ManagerReportServlet extends HttpServlet {
         request.getRequestDispatcher(PAGE).forward(request, response);
     }
 
-    /** Tiny JSON serializer for report maps/lists. */
-    static final class JsonLite {
-        private JsonLite() {
-        }
-
-        static String toJson(Object value) {
-            if (value == null) {
-                return "null";
-            }
-            if (value instanceof String s) {
-                return "\"" + escape(s) + "\"";
-            }
-            if (value instanceof Number || value instanceof Boolean) {
-                return String.valueOf(value);
-            }
-            if (value instanceof java.util.Map<?, ?> map) {
-                StringBuilder sb = new StringBuilder("{");
-                boolean first = true;
-                for (var e : map.entrySet()) {
-                    if (!first) {
-                        sb.append(',');
-                    }
-                    first = false;
-                    sb.append(toJson(String.valueOf(e.getKey())));
-                    sb.append(':');
-                    sb.append(toJson(e.getValue()));
-                }
-                sb.append('}');
-                return sb.toString();
-            }
-            if (value instanceof Iterable<?> it) {
-                StringBuilder sb = new StringBuilder("[");
-                boolean first = true;
-                for (Object o : it) {
-                    if (!first) {
-                        sb.append(',');
-                    }
-                    first = false;
-                    sb.append(toJson(o));
-                }
-                sb.append(']');
-                return sb.toString();
-            }
-            return toJson(String.valueOf(value));
-        }
-
-        private static String escape(String s) {
-            return s.replace("\\", "\\\\")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\r")
-                    .replace("\t", "\\t");
-        }
-    }
 }

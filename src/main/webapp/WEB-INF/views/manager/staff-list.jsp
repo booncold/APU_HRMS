@@ -7,11 +7,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Staff are grouped by role for clearer management.
-    Manager-role changes are limited to the seed manager.
-</p>
-
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
         <c:out value="${successMessage}"/>

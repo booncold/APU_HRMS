@@ -8,10 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Your payment history and printable receipts.
-</p>
-
 <div data-live-root class="data-table-wrap">
     <table class="data-table">
         <thead>

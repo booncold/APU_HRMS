@@ -8,11 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Five manager reports with charts. Palette follows the APU Hotel theme
-    (#a8793d, #2b241d, #6f6458).
-</p>
-
 <section class="report-summary" aria-label="Summary cards">
     <article class="report-card">
         <strong>Users</strong>

@@ -7,10 +7,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    View assigned cleaning tasks, mark them complete, and write room feedback.
-</p>
-
 <section class="action-list" aria-label="Housekeeper actions">
     <article class="action-card">
         <h2>

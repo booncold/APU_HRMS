@@ -8,20 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    <c:choose>
-        <c:when test="${isEdit}">
-            Update staff details. Leave password blank to keep the current password.
-        </c:when>
-        <c:otherwise>
-            Create Manager, Counter Staff, or Housekeeper accounts.
-            <c:if test="${not actorIsSeedAdmin}">
-                Only the seed manager can create Manager accounts.
-            </c:if>
-        </c:otherwise>
-    </c:choose>
-</p>
-
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
         <c:out value="${successMessage}"/>

@@ -8,11 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Your booking history. You may cancel a booking only while every room is still reserved
-    (before check-in). Refunds are marked pending and expected within 3 days (demo policy).
-</p>
-
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
         <c:out value="${successMessage}"/>
