@@ -11,9 +11,9 @@
         | APU Hotel
     </title>
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/theme.css">
+          href="${pageContext.request.contextPath}/assets/css/theme.css?v=20260806-1">
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/layout.css">
+          href="${pageContext.request.contextPath}/assets/css/layout.css?v=20260806-3">
 </head>
 <body>
 
@@ -27,7 +27,13 @@
                 <c:out value="${empty pageTitle ? 'APU Hotel' : pageTitle}"/>
             </div>
             <div class="app-topbar-meta">
-                <c:out value="${sessionScope.loggedInUserName}"/>
+                <svg class="app-topbar-clock-icon" aria-hidden="true" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="8.5"></circle>
+                    <path d="M12 7.5V12l3 2"></path>
+                </svg>
+                <time id="app-current-datetime" aria-label="Current date and time">
+                    -- --- ---- &middot; --:--:--
+                </time>
             </div>
         </header>
 

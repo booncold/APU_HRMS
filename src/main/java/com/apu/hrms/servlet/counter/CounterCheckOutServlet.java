@@ -3,6 +3,7 @@ package com.apu.hrms.servlet.counter;
 import com.apu.hrms.entity.BookingRoom;
 import com.apu.hrms.facade.BookingFacade;
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 
 @WebServlet("/counter/check-out")
 public class CounterCheckOutServlet extends HttpServlet {
@@ -27,7 +29,10 @@ public class CounterCheckOutServlet extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        request.setAttribute("stayList", bookingFacade.findActiveStays());
+        request.setAttribute(
+                "stayList",
+                bookingFacade.findCheckOutsDueByDate(LocalDate.now())
+        );
         request.setAttribute("successMessage", request.getParameter("success"));
         request.setAttribute("errorMessage", request.getParameter("error"));
 
@@ -54,7 +59,26 @@ public class CounterCheckOutServlet extends HttpServlet {
             response.sendRedirect(
                     ctx + "/counter/check-out?error=" + encode(ex.getMessage())
             );
+        } catch (EJBException ex) {
+            String businessMessage = findBusinessMessage(ex);
+            if (businessMessage == null) {
+                throw new ServletException("Unable to complete check-out.", ex);
+            }
+            response.sendRedirect(
+                    ctx + "/counter/check-out?error=" + encode(businessMessage)
+            );
         }
+    }
+
+    private String findBusinessMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof IllegalArgumentException) {
+                return current.getMessage();
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 
     private Long parseId(String raw) {

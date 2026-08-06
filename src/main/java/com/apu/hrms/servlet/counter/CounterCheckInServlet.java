@@ -3,6 +3,7 @@ package com.apu.hrms.servlet.counter;
 import com.apu.hrms.entity.BookingRoom;
 import com.apu.hrms.facade.BookingFacade;
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -30,7 +31,10 @@ public class CounterCheckInServlet extends HttpServlet {
 
         LocalDate today = LocalDate.now();
         request.setAttribute("today", today);
-        request.setAttribute("checkInList", bookingFacade.findCheckInsForDate(today));
+        request.setAttribute(
+                "checkInList",
+                bookingFacade.findCheckInsDueByDate(today)
+        );
         request.setAttribute("successMessage", request.getParameter("success"));
         request.setAttribute("errorMessage", request.getParameter("error"));
 
@@ -56,7 +60,26 @@ public class CounterCheckInServlet extends HttpServlet {
             response.sendRedirect(
                     ctx + "/counter/check-in?error=" + encode(ex.getMessage())
             );
+        } catch (EJBException ex) {
+            String businessMessage = findBusinessMessage(ex);
+            if (businessMessage == null) {
+                throw new ServletException("Unable to complete check-in.", ex);
+            }
+            response.sendRedirect(
+                    ctx + "/counter/check-in?error=" + encode(businessMessage)
+            );
         }
+    }
+
+    private String findBusinessMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof IllegalArgumentException) {
+                return current.getMessage();
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 
     private Long parseId(String raw) {

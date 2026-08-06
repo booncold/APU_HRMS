@@ -8,11 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Guests currently checked in. Check-out marks the room as needing cleaning
-    so counter staff can assign a housekeeper.
-</p>
-
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
         <c:out value="${successMessage}"/>
@@ -59,7 +54,7 @@
         <c:choose>
             <c:when test="${empty stayList}">
                 <tr>
-                    <td colspan="6" class="empty-row">No guests currently checked in.</td>
+                    <td colspan="6" class="empty-row">No stays are due for check-out yet.</td>
                 </tr>
             </c:when>
             <c:otherwise>

@@ -7,10 +7,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Book rooms, manage bookings, view payments, and leave comments.
-</p>
-
 <section class="action-list" aria-label="Customer actions">
     <article class="action-card">
         <h2><a href="${ctx}/customer/book">Book a Room</a></h2>

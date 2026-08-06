@@ -2,12 +2,11 @@ package com.apu.hrms.servlet.counter;
 
 import com.apu.hrms.entity.CleaningTask;
 import com.apu.hrms.entity.Room;
-import com.apu.hrms.entity.RoomStatus;
 import com.apu.hrms.entity.User;
 import com.apu.hrms.facade.CleaningTaskFacade;
-import com.apu.hrms.facade.RoomFacade;
 import com.apu.hrms.util.SessionUtil;
 import jakarta.ejb.EJB;
+import jakarta.ejb.EJBException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -25,9 +24,6 @@ public class CounterAssignCleaningServlet extends HttpServlet {
     private static final String PAGE = "/WEB-INF/views/counter/assign-cleaning.jsp";
 
     @EJB
-    private RoomFacade roomFacade;
-
-    @EJB
     private CleaningTaskFacade cleaningTaskFacade;
 
     @Override
@@ -36,7 +32,7 @@ public class CounterAssignCleaningServlet extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        List<Room> dirtyRooms = roomFacade.findByStatus(RoomStatus.NEEDS_CLEANING);
+        List<Room> dirtyRooms = cleaningTaskFacade.findRoomsAwaitingAssignment();
         List<User> availableHousekeepers = cleaningTaskFacade.findAvailableHousekeepers();
         List<CleaningTask> openAndRecent = cleaningTaskFacade.findAllDetailed();
 
@@ -77,7 +73,26 @@ public class CounterAssignCleaningServlet extends HttpServlet {
             response.sendRedirect(
                     ctx + "/counter/assign-cleaning?error=" + encode(ex.getMessage())
             );
+        } catch (EJBException ex) {
+            String businessMessage = findBusinessMessage(ex);
+            if (businessMessage == null) {
+                throw new ServletException("Unable to assign cleaning task.", ex);
+            }
+            response.sendRedirect(
+                    ctx + "/counter/assign-cleaning?error=" + encode(businessMessage)
+            );
         }
+    }
+
+    private String findBusinessMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof IllegalArgumentException) {
+                return current.getMessage();
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 
     private Long parseId(String raw) {

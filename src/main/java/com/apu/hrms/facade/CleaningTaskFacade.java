@@ -8,6 +8,7 @@ import com.apu.hrms.entity.User;
 import com.apu.hrms.entity.UserRole;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
@@ -112,6 +113,48 @@ public class CleaningTaskFacade {
         return count > 0;
     }
 
+    /**
+     * Dirty rooms that do not yet have an open cleaning assignment.
+     */
+    public long countRoomsAwaitingAssignment() {
+        return entityManager
+                .createQuery(
+                        "SELECT COUNT(r) FROM Room r "
+                                + "WHERE r.deleted = false "
+                                + "AND r.status = :roomStatus "
+                                + "AND NOT EXISTS ("
+                                + "  SELECT t.id FROM CleaningTask t "
+                                + "  WHERE t.room = r AND t.status = :taskStatus"
+                                + ")",
+                        Long.class
+                )
+                .setParameter("roomStatus", RoomStatus.NEEDS_CLEANING)
+                .setParameter("taskStatus", CleaningTaskStatus.ASSIGNED)
+                .getSingleResult();
+    }
+
+    /**
+     * Dirty rooms that can still receive a new cleaning assignment.
+     * Rooms with an existing open task are excluded from the selector.
+     */
+    public List<Room> findRoomsAwaitingAssignment() {
+        return entityManager
+                .createQuery(
+                        "SELECT r FROM Room r "
+                                + "WHERE r.deleted = false "
+                                + "AND r.status = :roomStatus "
+                                + "AND NOT EXISTS ("
+                                + "  SELECT t.id FROM CleaningTask t "
+                                + "  WHERE t.room = r AND t.status = :taskStatus"
+                                + ") "
+                                + "ORDER BY r.floor, r.roomNumber",
+                        Room.class
+                )
+                .setParameter("roomStatus", RoomStatus.NEEDS_CLEANING)
+                .setParameter("taskStatus", CleaningTaskStatus.ASSIGNED)
+                .getResultList();
+    }
+
     public List<User> findAvailableHousekeepers() {
         return entityManager
                 .createQuery(
@@ -141,7 +184,11 @@ public class CleaningTaskFacade {
             throw new IllegalArgumentException("Room, housekeeper, and assigner are required.");
         }
 
-        Room room = entityManager.find(Room.class, roomId);
+        Room room = entityManager.find(
+                Room.class,
+                roomId,
+                LockModeType.PESSIMISTIC_WRITE
+        );
         if (room == null || room.isDeleted()) {
             throw new IllegalArgumentException("Room not found.");
         }
@@ -156,7 +203,11 @@ public class CleaningTaskFacade {
             );
         }
 
-        User housekeeper = entityManager.find(User.class, housekeeperId);
+        User housekeeper = entityManager.find(
+                User.class,
+                housekeeperId,
+                LockModeType.PESSIMISTIC_WRITE
+        );
         if (housekeeper == null || housekeeper.isDeleted()
                 || housekeeper.getRole() != UserRole.HOUSEKEEPER) {
             throw new IllegalArgumentException("Select a valid housekeeper.");

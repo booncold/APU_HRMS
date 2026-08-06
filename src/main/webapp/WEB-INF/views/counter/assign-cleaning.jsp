@@ -8,11 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Assign rooms that need cleaning to available housekeepers
-    (housekeepers with no open task).
-</p>
-
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
         <c:out value="${successMessage}"/>
@@ -30,7 +25,9 @@
 
     <c:choose>
         <c:when test="${empty dirtyRooms}">
-            <p class="field-hint">No rooms currently need cleaning.</p>
+            <p class="field-hint">
+                No rooms are currently waiting for a cleaning assignment.
+            </p>
         </c:when>
         <c:when test="${empty availableHousekeepers}">
             <p class="field-hint">

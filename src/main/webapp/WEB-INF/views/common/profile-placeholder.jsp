@@ -6,10 +6,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Your account profile and password change screens will be completed in a later step.
-</p>
-
 <div class="placeholder-note" role="status">
     <strong>Coming soon:</strong>
     edit personal details and change password while logged in.

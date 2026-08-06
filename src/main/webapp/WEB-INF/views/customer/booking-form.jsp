@@ -9,11 +9,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Choose your check-in date (within the next 5 days), nights, and specific rooms.
-    Full prepayment is required. Check-in is completed at the counter on arrival.
-</p>
-
 <c:if test="${not empty formError}">
     <div class="alert-error" role="alert">
         <c:out value="${formError}"/>

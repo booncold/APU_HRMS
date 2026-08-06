@@ -9,11 +9,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    Book one or more rooms for a customer.
-    Check-in date must be within the next 5 days (including today). Full prepayment is required.
-</p>
-
 <c:if test="${not empty formError}">
     <div class="alert-error" role="alert">
         <c:out value="${formError}"/>

@@ -8,10 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    All housekeeper room feedbacks across the hotel.
-</p>
-
 <div class="toolbar" style="margin-bottom: 12px;">
     <form class="toolbar-form" action="#" onsubmit="return false;">
         <input class="live-search-input"

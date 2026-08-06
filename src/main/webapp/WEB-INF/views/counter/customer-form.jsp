@@ -8,17 +8,6 @@
 
 <jsp:include page="/WEB-INF/views/common/layout-top.jsp"/>
 
-<p class="page-summary">
-    <c:choose>
-        <c:when test="${isEdit}">
-            Update customer details. Leave password blank to keep the current password.
-        </c:when>
-        <c:otherwise>
-            Create a new customer account for hotel bookings.
-        </c:otherwise>
-    </c:choose>
-</p>
-
 <c:if test="${not empty successMessage}">
     <div class="status-message" role="status">
         <c:out value="${successMessage}"/>

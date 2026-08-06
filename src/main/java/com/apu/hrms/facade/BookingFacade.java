@@ -129,6 +129,44 @@ public class BookingFacade {
         return orders;
     }
 
+    /**
+     * Bookings arriving on or after the supplied date for the counter dashboard.
+     * Results are ordered from the nearest arrival date to the furthest.
+     */
+    public List<BookingOrder> findUpcomingDetailed(
+            LocalDate startDate,
+            int limit
+    ) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date is required.");
+        }
+        int resultLimit = Math.max(limit, 1);
+        List<BookingOrder> orders = entityManager
+                .createQuery(
+                        "SELECT DISTINCT o FROM BookingOrder o "
+                                + "LEFT JOIN FETCH o.customer "
+                                + "LEFT JOIN FETCH o.payment "
+                                + "WHERE o.checkInDate >= :startDate "
+                                + "AND o.status NOT IN :closedStatuses "
+                                + "ORDER BY o.checkInDate ASC, o.createdAt ASC",
+                        BookingOrder.class
+                )
+                .setParameter("startDate", startDate)
+                .setParameter(
+                        "closedStatuses",
+                        List.of(OrderStatus.CHECKED_OUT, OrderStatus.CANCELLED)
+                )
+                .setMaxResults(resultLimit)
+                .getResultList();
+
+        orders.forEach(order -> {
+            if (order.getRooms() != null) {
+                order.getRooms().size();
+            }
+        });
+        return orders;
+    }
+
     public List<BookingOrder> findByCustomer(User customer) {
         List<BookingOrder> orders = entityManager
                 .createQuery(
@@ -216,6 +254,80 @@ public class BookingFacade {
         return lines;
     }
 
+    /**
+     * Reserved rooms whose arrival date has arrived.
+     * Missed arrivals remain in the queue so the counter can process a late
+     * check-in instead of leaving the booking permanently stranded.
+     */
+    public List<BookingRoom> findCheckInsDueByDate(LocalDate date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Check-in date is required.");
+        }
+        List<BookingRoom> lines = entityManager
+                .createQuery(
+                        "SELECT br FROM BookingRoom br "
+                                + "JOIN br.order o "
+                                + "WHERE o.checkInDate <= :date "
+                                + "AND br.status = :roomStatus "
+                                + "AND o.status <> :cancelledStatus "
+                                + "ORDER BY o.checkInDate ASC, "
+                                + "o.orderNo ASC, br.roomNumberSnapshot ASC",
+                        BookingRoom.class
+                )
+                .setParameter("date", date)
+                .setParameter("roomStatus", BookingRoomStatus.RESERVED)
+                .setParameter("cancelledStatus", OrderStatus.CANCELLED)
+                .getResultList();
+        initializeBookingRooms(lines);
+        return lines;
+    }
+
+    /**
+     * Checked-in rooms whose scheduled departure date has arrived.
+     * Overdue stays remain visible so the counter can still complete them.
+     */
+    public List<BookingRoom> findCheckOutsDueByDate(LocalDate date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Check-out date is required.");
+        }
+        List<BookingRoom> lines = entityManager
+                .createQuery(
+                        "SELECT br FROM BookingRoom br "
+                                + "JOIN br.order o "
+                                + "WHERE br.status = :roomStatus "
+                                + "AND o.checkOutDate <= :date "
+                                + "AND o.status <> :cancelledStatus "
+                                + "ORDER BY o.checkOutDate ASC, br.roomNumberSnapshot ASC",
+                        BookingRoom.class
+                )
+                .setParameter("roomStatus", BookingRoomStatus.CHECKED_IN)
+                .setParameter("date", date)
+                .setParameter("cancelledStatus", OrderStatus.CANCELLED)
+                .getResultList();
+        initializeBookingRooms(lines);
+        return lines;
+    }
+
+    /**
+     * Rooms scheduled to depart on the supplied date and still checked in.
+     */
+    public List<BookingRoom> findCheckOutsForDate(LocalDate date) {
+        List<BookingRoom> lines = entityManager
+                .createQuery(
+                        "SELECT br FROM BookingRoom br "
+                                + "JOIN br.order o "
+                                + "WHERE o.checkOutDate = :date "
+                                + "AND br.status = com.apu.hrms.entity.BookingRoomStatus.CHECKED_IN "
+                                + "AND o.status <> com.apu.hrms.entity.OrderStatus.CANCELLED "
+                                + "ORDER BY br.roomNumberSnapshot",
+                        BookingRoom.class
+                )
+                .setParameter("date", date)
+                .getResultList();
+        initializeBookingRooms(lines);
+        return lines;
+    }
+
     public long countAll() {
         return entityManager
                 .createQuery("SELECT COUNT(o) FROM BookingOrder o", Long.class)
@@ -279,6 +391,21 @@ public class BookingFacade {
         if (line.getStatus() != BookingRoomStatus.CHECKED_IN) {
             throw new IllegalArgumentException(
                     "Room " + line.getRoomNumberSnapshot() + " is not checked in."
+            );
+        }
+
+        LocalDate scheduledCheckOutDate = order.getCheckOutDate();
+        if (scheduledCheckOutDate == null) {
+            throw new IllegalArgumentException(
+                    "The scheduled check-out date is missing for this booking."
+            );
+        }
+        if (scheduledCheckOutDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "Room " + line.getRoomNumberSnapshot()
+                            + " is scheduled for check-out on "
+                            + scheduledCheckOutDate
+                            + ". Early check-out is not allowed."
             );
         }
 
