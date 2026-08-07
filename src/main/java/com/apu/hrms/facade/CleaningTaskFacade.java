@@ -12,10 +12,14 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Stateless
 public class CleaningTaskFacade {
+
+    public static final int MAX_OPEN_TASKS_PER_HOUSEKEEPER = 3;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -81,8 +85,8 @@ public class CleaningTaskFacade {
         return tasks;
     }
 
-    public boolean hasOpenTask(User housekeeper) {
-        Long count = entityManager
+    public long countOpenTasks(User housekeeper) {
+        return entityManager
                 .createQuery(
                         "SELECT COUNT(t) FROM CleaningTask t "
                                 + "WHERE t.housekeeper = :housekeeper "
@@ -92,8 +96,10 @@ public class CleaningTaskFacade {
                 .setParameter("housekeeper", housekeeper)
                 .setParameter("status", CleaningTaskStatus.ASSIGNED)
                 .getSingleResult();
+    }
 
-        return count > 0;
+    public boolean hasOpenTask(User housekeeper) {
+        return countOpenTasks(housekeeper) > 0;
     }
 
     public boolean hasOpenTaskForRoom(Room room) {
@@ -155,24 +161,62 @@ public class CleaningTaskFacade {
                 .getResultList();
     }
 
+    public List<User> findActiveHousekeepers() {
+        return entityManager
+                .createQuery(
+                        "SELECT u FROM User u "
+                                + "WHERE u.role = :role "
+                                + "AND u.deleted = false "
+                                + "ORDER BY u.name",
+                        User.class
+                )
+                .setParameter("role", UserRole.HOUSEKEEPER)
+                .getResultList();
+    }
+
+    public Map<Long, Long> findOpenTaskCountsByHousekeeper() {
+        List<Object[]> results = entityManager
+                .createQuery(
+                        "SELECT t.housekeeper.id, COUNT(t) FROM CleaningTask t "
+                                + "WHERE t.status = :status "
+                                + "AND t.housekeeper.deleted = false "
+                                + "GROUP BY t.housekeeper.id",
+                        Object[].class
+                )
+                .setParameter("status", CleaningTaskStatus.ASSIGNED)
+                .getResultList();
+
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] result : results) {
+            counts.put((Long) result[0], ((Number) result[1]).longValue());
+        }
+        return counts;
+    }
+
     public List<User> findAvailableHousekeepers() {
         return entityManager
                 .createQuery(
                         "SELECT u FROM User u "
-                                + "WHERE u.role = com.apu.hrms.entity.UserRole.HOUSEKEEPER "
+                                + "WHERE u.role = :role "
                                 + "AND u.deleted = false "
-                                + "AND u.id NOT IN ("
-                                + "  SELECT t.housekeeper.id FROM CleaningTask t "
-                                + "  WHERE t.status = com.apu.hrms.entity.CleaningTaskStatus.ASSIGNED"
-                                + ") "
+                                + "AND ("
+                                + "  SELECT COUNT(t) FROM CleaningTask t "
+                                + "  WHERE t.housekeeper = u AND t.status = :status"
+                                + ") < :maxOpenTasks "
                                 + "ORDER BY u.name",
                         User.class
+                )
+                .setParameter("role", UserRole.HOUSEKEEPER)
+                .setParameter("status", CleaningTaskStatus.ASSIGNED)
+                .setParameter(
+                        "maxOpenTasks",
+                        (long) MAX_OPEN_TASKS_PER_HOUSEKEEPER
                 )
                 .getResultList();
     }
 
     /**
-     * Counter assigns a dirty room to a free housekeeper.
+     * Counter assigns a dirty room to a housekeeper with remaining capacity.
      */
     public CleaningTask assignTask(
             Long roomId,
@@ -212,9 +256,12 @@ public class CleaningTaskFacade {
                 || housekeeper.getRole() != UserRole.HOUSEKEEPER) {
             throw new IllegalArgumentException("Select a valid housekeeper.");
         }
-        if (hasOpenTask(housekeeper)) {
+        long openTaskCount = countOpenTasks(housekeeper);
+        if (openTaskCount >= MAX_OPEN_TASKS_PER_HOUSEKEEPER) {
             throw new IllegalArgumentException(
-                    housekeeper.getName() + " already has an open cleaning task."
+                    housekeeper.getName() + " already has " + openTaskCount
+                            + " open cleaning tasks (maximum "
+                            + MAX_OPEN_TASKS_PER_HOUSEKEEPER + ")."
             );
         }
 

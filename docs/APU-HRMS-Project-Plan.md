@@ -161,7 +161,7 @@ webapp/
 | 12 | Check-out | **不再收款**；只改状态 + 触发清洁 |
 | 13 | 一单日期 | **统一入住日/离店日/晚数**（订单级一致） |
 | 14 | 取消粒度 | **整单取消** |
-| 15 | Housekeeper 可用 | **无未完成 ASSIGNED 任务** 即为可用 |
+| 15 | Housekeeper 可用 | 每位 Housekeeper 最多同时持有 **3 个未完成 ASSIGNED 任务**；少于 3 个即可继续分配 |
 | 16 | 密码规则 | ≥8 位，含字母和数字 |
 | 17 | 订单号 | 如 `ORD-yyyyMMdd-XXXX` |
 | 18 | 收据号 | 如 `RCP-yyyyMMdd-XXXX` |
@@ -355,7 +355,7 @@ ASSIGNED → COMPLETED
 ```
 Counter：今日 CI 列表（房号）→ Check-in → OCCUPIED
 Counter：Check-out → CHECKED_OUT + NEEDS_CLEANING
-Counter：派可用 HK → Task ASSIGNED
+Counter：派给未满 3 个任务的 HK → Task ASSIGNED
 HK：完成 → COMPLETED → 房间 AVAILABLE
 HK：可对该房写 Feedback
 ```

@@ -22,6 +22,10 @@
 
 <section class="form-panel" style="max-width: none; margin-bottom: 28px;">
     <h2 class="list-section-title" style="margin-bottom: 12px;">New assignment</h2>
+    <p class="field-hint" style="margin-bottom: 12px;">
+        Each housekeeper may hold up to <c:out value="${maxOpenTasks}"/>
+        open cleaning tasks at the same time.
+    </p>
 
     <c:choose>
         <c:when test="${empty dirtyRooms}">
@@ -29,10 +33,15 @@
                 No rooms are currently waiting for a cleaning assignment.
             </p>
         </c:when>
+        <c:when test="${empty housekeepers}">
+            <p class="field-hint">
+                There are rooms needing cleaning, but no active housekeepers are available.
+            </p>
+        </c:when>
         <c:when test="${empty availableHousekeepers}">
             <p class="field-hint">
-                There are rooms needing cleaning, but no housekeeper is free
-                (each HK may have only one open task at a time).
+                There are rooms needing cleaning, but every active housekeeper
+                is currently at the <c:out value="${maxOpenTasks}"/>-task limit.
             </p>
             <p class="field-hint" style="margin-top: 8px;">
                 Dirty rooms:
@@ -55,10 +64,15 @@
                 </select>
 
                 <select name="housekeeperId" required aria-label="Available housekeeper"
-                        style="min-width: 200px; height: 44px; padding: 0 12px; border: 1px solid var(--border-colour); border-radius: var(--radius-md); background: #fff;">
+                        style="min-width: 280px; height: 44px; padding: 0 12px; border: 1px solid var(--border-colour); border-radius: var(--radius-md); background: #fff;">
                     <option value="">Select housekeeper</option>
                     <c:forEach var="hk" items="${availableHousekeepers}">
-                        <option value="${hk.id}"><c:out value="${hk.name}"/></option>
+                        <c:set var="openCount" value="${housekeeperOpenTaskCounts[hk.id]}"/>
+                        <option value="${hk.id}">
+                            <c:out value="${hk.name}"/> —
+                            <c:out value="${empty openCount ? 0 : openCount}"/>/<c:out value="${maxOpenTasks}"/>
+                            open tasks
+                        </option>
                     </c:forEach>
                 </select>
 
@@ -72,6 +86,58 @@
             </form>
         </c:otherwise>
     </c:choose>
+</section>
+
+<section class="list-section" style="margin-bottom: 28px;">
+    <div class="list-section-header">
+        <h2 class="list-section-title">Housekeeper workload</h2>
+        <span class="list-section-count">
+            <c:out value="${fn:length(housekeepers)}"/> Active
+        </span>
+    </div>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Housekeeper</th>
+                <th>Current open tasks</th>
+                <th>Assignment capacity</th>
+            </tr>
+            </thead>
+            <tbody>
+            <c:choose>
+                <c:when test="${empty housekeepers}">
+                    <tr>
+                        <td colspan="3" class="empty-row">No active housekeepers found.</td>
+                    </tr>
+                </c:when>
+                <c:otherwise>
+                    <c:forEach var="hk" items="${housekeepers}">
+                        <c:set var="openCount" value="${housekeeperOpenTaskCounts[hk.id]}"/>
+                        <c:set var="displayOpenCount" value="${empty openCount ? 0 : openCount}"/>
+                        <tr>
+                            <td><c:out value="${hk.name}"/></td>
+                            <td>
+                                <c:out value="${displayOpenCount}"/>/<c:out value="${maxOpenTasks}"/>
+                            </td>
+                            <td>
+                                <c:choose>
+                                    <c:when test="${displayOpenCount >= maxOpenTasks}">
+                                        Full
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:out value="${maxOpenTasks - displayOpenCount}"/> slot(s) available
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
+                        </tr>
+                    </c:forEach>
+                </c:otherwise>
+            </c:choose>
+            </tbody>
+        </table>
+    </div>
 </section>
 
 <section class="list-section">

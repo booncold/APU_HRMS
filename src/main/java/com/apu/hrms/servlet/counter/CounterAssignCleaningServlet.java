@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/counter/assign-cleaning")
 public class CounterAssignCleaningServlet extends HttpServlet {
@@ -33,11 +34,23 @@ public class CounterAssignCleaningServlet extends HttpServlet {
     ) throws ServletException, IOException {
 
         List<Room> dirtyRooms = cleaningTaskFacade.findRoomsAwaitingAssignment();
+        List<User> housekeepers = cleaningTaskFacade.findActiveHousekeepers();
         List<User> availableHousekeepers = cleaningTaskFacade.findAvailableHousekeepers();
+        Map<Long, Long> housekeeperOpenTaskCounts =
+                cleaningTaskFacade.findOpenTaskCountsByHousekeeper();
         List<CleaningTask> openAndRecent = cleaningTaskFacade.findAllDetailed();
 
         request.setAttribute("dirtyRooms", dirtyRooms);
+        request.setAttribute("housekeepers", housekeepers);
         request.setAttribute("availableHousekeepers", availableHousekeepers);
+        request.setAttribute(
+                "housekeeperOpenTaskCounts",
+                housekeeperOpenTaskCounts
+        );
+        request.setAttribute(
+                "maxOpenTasks",
+                CleaningTaskFacade.MAX_OPEN_TASKS_PER_HOUSEKEEPER
+        );
         request.setAttribute("taskList", openAndRecent);
         request.setAttribute("successMessage", request.getParameter("success"));
         request.setAttribute("errorMessage", request.getParameter("error"));
