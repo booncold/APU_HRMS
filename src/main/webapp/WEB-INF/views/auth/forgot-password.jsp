@@ -120,9 +120,6 @@
             <c:when test="${smtpConfigured}">
                 A reset link will be sent by email when the account exists.
             </c:when>
-            <c:otherwise>
-                SMTP is not configured yet — a one-time demo link will appear below if the account exists.
-            </c:otherwise>
         </c:choose>
     </p>
 
